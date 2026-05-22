@@ -26,7 +26,6 @@ import com.rayearth.data.remote.dto.EventoDTO
 import com.rayearth.data.repository.AuthRepository
 import com.rayearth.presentation.viewmodel.EventosViewModel
 import org.koin.compose.koinInject
-import android.util.Log
 @Composable
 fun EventosScreen(viewModel: EventosViewModel) {
     val context = LocalContext.current
@@ -157,7 +156,6 @@ private fun EventoCard(
         colors = CardDefaults.cardColors(containerColor = Color(0xFF141414)),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Log.e("eventcard", evento.titulo);
         Column {
             val nomeArquivoLimpo = evento.urlImagem
                 .substringAfterLast("/")
