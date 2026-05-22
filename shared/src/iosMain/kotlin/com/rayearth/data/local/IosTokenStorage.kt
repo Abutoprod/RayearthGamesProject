@@ -2,6 +2,8 @@ package com.rayearth.data.local
 
 import platform.Foundation.NSUserDefaults
 
+val platform:
+
 /**
  * Implementação iOS do TokenStorage usando NSUserDefaults.
  *
