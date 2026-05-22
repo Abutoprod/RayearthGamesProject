@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Permite HTTP para o servidor de desenvolvimento.
+    Em produção, remova o <domain> e use apenas HTTPS.
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">129.121.46.153</domain>
+    </domain-config>
+</network-security-config>
