@@ -17,7 +17,7 @@ import kotlinx.serialization.json.Json
 
 const val BASE_HOST = "129.121.46.153"
 const val BASE_PORT = 8080
-
+const val BASE_URL = "http://$BASE_HOST:$BASE_PORT"
 fun createHttpClient(tokenProvider: () -> String?): HttpClient {
     return HttpClient(httpClientEngine()) {
 

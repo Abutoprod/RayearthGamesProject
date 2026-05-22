@@ -26,6 +26,7 @@ import com.rayearth.data.remote.dto.EventoDTO
 import com.rayearth.data.repository.AuthRepository
 import com.rayearth.presentation.viewmodel.EventosViewModel
 import org.koin.compose.koinInject
+import com.rayearth.data.remote.BASE_URL
 @Composable
 fun EventosScreen(viewModel: EventosViewModel) {
     val context = LocalContext.current
@@ -163,8 +164,7 @@ private fun EventoCard(
                 .replace(":", "")
 
             AsyncImage(
-                model = if (nomeArquivoLimpo.isNotEmpty()) "http://129.121.46.153:8080/uploads/$nomeArquivoLimpo" else "",
-                contentDescription = evento.titulo,
+                model = if (nomeArquivoLimpo.isNotEmpty()) "${BASE_URL}/uploads/$nomeArquivoLimpo" else "",                contentDescription = evento.titulo,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxWidth().height(180.dp)
             )
