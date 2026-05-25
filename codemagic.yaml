@@ -1,0 +1,19 @@
+workflows:
+  android-workflow:
+    name: Android Build
+    max_build_duration: 60
+    environment:
+      java: 17
+    scripts:
+      - name: Build Android APK
+        script: |
+          ./gradlew androidApp:assembleDebug
+    artifacts:
+      - androidApp/build/outputs/apk/debug/*.apk
+    publishing:
+      email:
+        recipients:
+          - victorconforto@outlook.com
+        notify:
+          success: true
+          failure: true
