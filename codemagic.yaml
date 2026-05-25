@@ -1,0 +1,77 @@
+workflows:
+  android-workflow:
+    name: Android Build
+    max_build_duration: 60
+    environment:
+      java: 17
+    scripts:
+      - name: Set up Gradle
+        script: |
+          gradle wrapper --gradle-version 8.9
+          chmod +x gradlew
+      - name: Build Android APK
+        script: |
+          ./gradlew androidApp:assembleDebug
+    artifacts:
+      - androidApp/build/outputs/apk/debug/*.apk
+    publishing:
+      email:
+        recipients:
+          - victorconforto@outlook.com
+        notify:
+          success: true
+          failure: true
+
+  ios-workflow:
+    name: iOS Build
+    max_build_duration: 60
+    environment:
+      xcode: 16.2
+      java: 17
+    scripts:
+      - name: Install Gradle 8.9
+        script: |
+          curl -L https://services.gradle.org/distributions/gradle-8.9-bin.zip -o /tmp/gradle-8.9-bin.zip
+          unzip -q /tmp/gradle-8.9-bin.zip -d /tmp/gradle
+          export PATH=/tmp/gradle/gradle-8.9/bin:$PATH
+          gradle --version
+      - name: Build shared KMP framework
+        script: |
+          export PATH=/tmp/gradle/gradle-8.9/bin:$PATH
+          gradle :shared:assembleSharedDebugXCFramework
+      - name: Copy XCFramework
+        script: |
+          cp -R shared/build/XCFrameworks/debug/Shared.xcframework iosApp/
+      - name: Build iOS
+        script: |
+          xcodebuild \
+            -project iosApp/iosApp.xcodeproj \
+            -scheme iosApp \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.2' \
+            -derivedDataPath build/ios \
+            ONLY_ACTIVE_ARCH=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            FRAMEWORK_SEARCH_PATHS="$(pwd)/iosApp"
+
+          APP_PATH="build/ios/Build/Products/Debug-iphonesimulator/RayearthGames.app"
+          echo "=== Tamanho do .app ==="
+          du -sh "$APP_PATH"
+          echo "=== Conteudo do .app ==="
+          ls "$APP_PATH"
+
+          mkdir -p /tmp/Payload
+          cp -R "$APP_PATH" /tmp/Payload/
+          cd /tmp
+          zip -r RayearthGames.zip Payload/
+          cp RayearthGames.zip $CM_BUILD_DIR/RayearthGames.zip
+    artifacts:
+      - RayearthGames.zip
+    publishing:
+      email:
+        recipients:
+          - victorconforto@outlook.com
+        notify:
+          success: true
+          failure: true
