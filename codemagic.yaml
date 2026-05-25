@@ -22,12 +22,11 @@ workflows:
           success: true
           failure: true
 
-  ios-workflow:
+ ios-workflow:
     name: iOS Build
     max_build_duration: 60
     environment:
       xcode: latest
-      cocoapods: default
       java: 17
     scripts:
       - name: Set up Gradle
@@ -37,14 +36,14 @@ workflows:
       - name: Build shared KMP framework
         script: |
           ./gradlew :shared:assembleSharedDebugXCFramework
-      - name: Install CocoaPods
+      - name: Copy XCFramework
         script: |
-          cd iosApp
-          pod install --repo-update
+          mkdir -p iosApp/Shared.xcframework
+          cp -R shared/build/XCFrameworks/debug/Shared.xcframework iosApp/
       - name: Build iOS
         script: |
           xcodebuild \
-            -workspace iosApp/iosApp.xcworkspace \
+            -project iosApp/iosApp.xcodeproj \
             -scheme iosApp \
             -configuration Debug \
             -sdk iphonesimulator \
