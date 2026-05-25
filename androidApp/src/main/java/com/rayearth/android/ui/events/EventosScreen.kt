@@ -152,6 +152,19 @@ private fun EventoCard(
     estaInscrito: Boolean,
     onAcaoClick: () -> Unit
 ) {
+    // Formata a data: "2026-05-22T18:00:00" → dia "22/05" e hora "18:00"
+    val (diaFormatado, horaFormatada) = remember(evento.dataHora) {
+        try {
+            val partes = evento.dataHora.split("T")
+            val data = partes[0].split("-")
+            val hora = partes.getOrNull(1)?.substring(0, 5) ?: "--:--"
+            val diaFmt = "${data[2]}/${data[1]}"
+            Pair(diaFmt, hora)
+        } catch (e: Exception) {
+            Pair("--/--", "--:--")
+        }
+    }
+
     Card(
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF141414)),
@@ -163,19 +176,63 @@ private fun EventoCard(
                 .replace(" ", "_")
                 .replace(":", "")
 
-            AsyncImage(
-                model = if (nomeArquivoLimpo.isNotEmpty()) "${BASE_URL}/uploads/$nomeArquivoLimpo" else "",                contentDescription = evento.titulo,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxWidth().height(180.dp)
-            )
+            // Imagem com badge de data sobreposto no canto superior esquerdo
+            Box {
+                AsyncImage(
+                    model = if (nomeArquivoLimpo.isNotEmpty()) "${BASE_URL}/uploads/$nomeArquivoLimpo" else "",
+                    contentDescription = evento.titulo,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxWidth().height(180.dp)
+                )
+
+                // Badge de data — canto superior esquerdo
+                Surface(
+                    modifier = Modifier
+                        .padding(12.dp)
+                        .align(Alignment.TopStart),
+                    shape = RoundedCornerShape(10.dp),
+                    color = Color.Black.copy(alpha = 0.75f)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = diaFormatado,
+                            color = Color.White,
+                            fontWeight = FontWeight.Black,
+                            fontSize = 15.sp
+                        )
+                        Text(
+                            text = horaFormatada,
+                            color = Color(0xFFE91E63),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp
+                        )
+                    }
+                }
+            }
+
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Chip(evento.jogoNome)
                     Chip(evento.filialNome)
                 }
-                Text(evento.titulo, color = Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Text(evento.descricao, color = Color.Gray, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Text(evento.dataHora, color = Color(0xFFE91E63), style = MaterialTheme.typography.labelSmall)
+                Text(
+                    evento.titulo,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    evento.descricao,
+                    color = Color.Gray,
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
                 Button(
                     onClick = onAcaoClick,
                     modifier = Modifier.fillMaxWidth(),
@@ -194,7 +251,6 @@ private fun EventoCard(
         }
     }
 }
-
 @Composable
 private fun Chip(text: String) {
     Surface(color = Color(0xFF2A2A2A), shape = RoundedCornerShape(6.dp)) {
