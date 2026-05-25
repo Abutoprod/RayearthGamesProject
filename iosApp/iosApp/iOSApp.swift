@@ -5,8 +5,7 @@ import Shared
 struct iOSApp: App {
 
     init() {
-        // Inicializa o Koin com os módulos iOS + compartilhado
-        KoinInitKt.doInitKoin()
+        DiKoinInit_iosKt.initKoin()
     }
 
     var body: some Scene {
