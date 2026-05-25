@@ -29,9 +29,17 @@ workflows:
       xcode: 16.2
       java: 17
     scripts:
+      - name: Install Gradle 8.9
+        script: |
+          brew install gradle@8 || true
+          curl -L https://services.gradle.org/distributions/gradle-8.9-bin.zip -o /tmp/gradle-8.9-bin.zip
+          unzip -q /tmp/gradle-8.9-bin.zip -d /tmp/gradle
+          export PATH=/tmp/gradle/gradle-8.9/bin:$PATH
+          echo "export PATH=/tmp/gradle/gradle-8.9/bin:$PATH" >> $HOME/.bashrc
+          gradle --version
       - name: Build shared KMP framework
         script: |
-          export GRADLE_USER_HOME=$HOME/.gradle
+          export PATH=/tmp/gradle/gradle-8.9/bin:$PATH
           gradle :shared:assembleSharedDebugXCFramework
       - name: Copy XCFramework
         script: |
