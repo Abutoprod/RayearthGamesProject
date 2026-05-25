@@ -63,10 +63,13 @@ workflows:
           echo "Conteudo do app:"
           ls -la "$APP_PATH"
           
-          cd build/ios/Build/Products/Debug-iphonesimulator
-          zip -r RayearthGames.zip RayearthGames.app/
+          mkdir -p /tmp/Payload
+          cp -R "$APP_PATH" /tmp/Payload/
+          cd /tmp
+          zip -r RayearthGames.zip Payload/
+          cp RayearthGames.zip $CM_BUILD_DIR/RayearthGames.zip
     artifacts:
-      - build/ios/Build/Products/Debug-iphonesimulator/RayearthGames.zip
+      - RayearthGames.zip
     publishing:
       email:
         recipients:
