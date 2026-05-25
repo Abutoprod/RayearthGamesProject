@@ -1,4 +1,28 @@
-ios-workflow:
+workflows:
+  android-workflow:
+    name: Android Build
+    max_build_duration: 60
+    environment:
+      java: 17
+    scripts:
+      - name: Set up Gradle
+        script: |
+          gradle wrapper --gradle-version 8.9
+          chmod +x gradlew
+      - name: Build Android APK
+        script: |
+          ./gradlew androidApp:assembleDebug
+    artifacts:
+      - androidApp/build/outputs/apk/debug/*.apk
+    publishing:
+      email:
+        recipients:
+          - victorconforto@outlook.com
+        notify:
+          success: true
+          failure: true
+
+  ios-workflow:
     name: iOS Build
     max_build_duration: 60
     environment:
@@ -26,7 +50,6 @@ ios-workflow:
             ONLY_ACTIVE_ARCH=NO \
             CODE_SIGNING_ALLOWED=NO \
             FRAMEWORK_SEARCH_PATHS="$(pwd)/iosApp"
-          
           du -sh build/ios/Build/Products/Debug-iphonesimulator/RayearthGames.app
           cd build/ios/Build/Products/Debug-iphonesimulator
           zip -r RayearthGames.zip RayearthGames.app
