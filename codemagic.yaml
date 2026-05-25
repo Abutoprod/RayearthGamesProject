@@ -47,10 +47,15 @@ workflows:
             -scheme iosApp \
             -configuration Debug \
             -sdk iphonesimulator \
-            -destination 'platform=iOS Simulator,name=iPhone 15 Pro,OS=18.2' \
+            -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.4.1' \
             -derivedDataPath build/ios \
             ONLY_ACTIVE_ARCH=NO \
-            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGNING_ALLOWED=NO \
+            FRAMEWORK_SEARCH_PATHS="$(pwd)/iosApp"
+          
+          echo "Tamanho do app:"
+          du -sh build/ios/Build/Products/Debug-iphonesimulator/RayearthGames.app
+          
           cd build/ios/Build/Products/Debug-iphonesimulator
           zip -r RayearthGames.zip RayearthGames.app
     artifacts:
