@@ -22,7 +22,7 @@ workflows:
           success: true
           failure: true
 
- ios-workflow:
+  ios-workflow:
     name: iOS Build
     max_build_duration: 60
     environment:
