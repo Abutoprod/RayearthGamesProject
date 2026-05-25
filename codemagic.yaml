@@ -31,7 +31,6 @@ workflows:
     scripts:
       - name: Install Gradle 8.9
         script: |
-          brew install gradle@8 || true
           curl -L https://services.gradle.org/distributions/gradle-8.9-bin.zip -o /tmp/gradle-8.9-bin.zip
           unzip -q /tmp/gradle-8.9-bin.zip -d /tmp/gradle
           export PATH=/tmp/gradle/gradle-8.9/bin:$PATH
@@ -57,9 +56,15 @@ workflows:
             ONLY_ACTIVE_ARCH=NO \
             CODE_SIGNING_ALLOWED=NO \
             FRAMEWORK_SEARCH_PATHS="$(pwd)/iosApp"
-          du -sh build/ios/Build/Products/Debug-iphonesimulator/RayearthGames.app
+          
+          APP_PATH="build/ios/Build/Products/Debug-iphonesimulator/RayearthGames.app"
+          echo "Tamanho do app:"
+          du -sh "$APP_PATH"
+          echo "Conteudo do app:"
+          ls -la "$APP_PATH"
+          
           cd build/ios/Build/Products/Debug-iphonesimulator
-          zip -r RayearthGames.zip RayearthGames.app
+          zip -r RayearthGames.zip RayearthGames.app/
     artifacts:
       - build/ios/Build/Products/Debug-iphonesimulator/RayearthGames.zip
     publishing:
