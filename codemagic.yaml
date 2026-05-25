@@ -34,7 +34,6 @@ workflows:
           curl -L https://services.gradle.org/distributions/gradle-8.9-bin.zip -o /tmp/gradle-8.9-bin.zip
           unzip -q /tmp/gradle-8.9-bin.zip -d /tmp/gradle
           export PATH=/tmp/gradle/gradle-8.9/bin:$PATH
-          echo "export PATH=/tmp/gradle/gradle-8.9/bin:$PATH" >> $HOME/.bashrc
           gradle --version
       - name: Build shared KMP framework
         script: |
@@ -58,10 +57,10 @@ workflows:
             FRAMEWORK_SEARCH_PATHS="$(pwd)/iosApp"
           
           APP_PATH="build/ios/Build/Products/Debug-iphonesimulator/RayearthGames.app"
-          echo "Tamanho do app:"
-          du -sh "$APP_PATH"
-          echo "Conteudo do app:"
+          echo "=== Conteudo do .app ==="
           ls -la "$APP_PATH"
+          echo "=== Procurando Info.plist ==="
+          find "$APP_PATH" -name "Info.plist"
           
           mkdir -p /tmp/Payload
           cp -R "$APP_PATH" /tmp/Payload/
