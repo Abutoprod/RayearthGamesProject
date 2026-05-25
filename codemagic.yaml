@@ -47,10 +47,14 @@ workflows:
             -scheme iosApp \
             -configuration Debug \
             -sdk iphonesimulator \
+            -destination 'platform=iOS Simulator,name=iPhone 15 Pro,OS=18.2' \
             -derivedDataPath build/ios \
-            CODE_SIGNING_ALLOWED=NO 2>&1 | grep -E "error:|warning:|BUILD"
+            ONLY_ACTIVE_ARCH=NO \
+            CODE_SIGNING_ALLOWED=NO
+          cd build/ios/Build/Products/Debug-iphonesimulator
+          zip -r RayearthGames.zip RayearthGames.app
     artifacts:
-      - build/ios/Build/Products/Debug-iphonesimulator/*.app
+      - build/ios/Build/Products/Debug-iphonesimulator/RayearthGames.zip
     publishing:
       email:
         recipients:
