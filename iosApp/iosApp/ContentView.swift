@@ -1,33 +1,42 @@
 import SwiftUI
-import SharedLogic
+import Shared
 
-struct ContentView: View {
-    @State private var showContent = false
+struct RootView: View {
+    @State private var isLoggedIn: Bool = false
+    @State private var isChecking: Bool = true
+
+    private let authRepository = KoinHelper.getAuthRepository()
+
     var body: some View {
-        VStack {
-            Button("Click me!") {
-                withAnimation {
-                    showContent = !showContent
-                }
-            }
-
-            if showContent {
-                VStack(spacing: 16) {
-                    Image(systemName: "swift")
-                        .font(.system(size: 200))
-                        .foregroundColor(.accentColor)
-                    Text("SwiftUI: \(Greeting().greet())")
-                }
-                .transition(.move(edge: .top).combined(with: .opacity))
+        Group {
+            if isChecking {
+                SplashView()
+            } else if isLoggedIn {
+                MainMenuView(onLogout: {
+                    isLoggedIn = false
+                })
+            } else {
+                LoginView(onLoginSuccess: {
+                    isLoggedIn = true
+                })
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .padding()
+        .task {
+            isLoggedIn = (try? await authRepository.isLoggedIn()) ?? false
+            isChecking = false
+        }
     }
-}
-
-struct ContentView_Previews: PreviewProvider {
-    static var previews: some View {
-        ContentView()
+    extension Color {
+        init(hex: String) {
+            let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+            var int: UInt64 = 0
+            Scanner(string: hex).scanHexInt64(&int)
+            let a, r, g, b: UInt64
+            switch hex.count {
+            case 6: (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
+            default: (a, r, g, b) = (1, 1, 1, 0)
+            }
+            self.init(.sRGB, red: Double(r)/255, green: Double(g)/255, blue: Double(b)/255, opacity: Double(a)/255)
+        }
     }
 }
