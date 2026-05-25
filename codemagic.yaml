@@ -21,3 +21,41 @@ workflows:
         notify:
           success: true
           failure: true
+
+  ios-workflow:
+    name: iOS Build
+    max_build_duration: 60
+    environment:
+      xcode: latest
+      cocoapods: default
+      java: 17
+    scripts:
+      - name: Set up Gradle
+        script: |
+          gradle wrapper --gradle-version 8.9
+          chmod +x gradlew
+      - name: Build shared KMP framework
+        script: |
+          ./gradlew :shared:assembleSharedReleaseXCFramework
+      - name: Install CocoaPods
+        script: |
+          cd iosApp
+          pod install --repo-update
+      - name: Build iOS
+        script: |
+          xcodebuild \
+            -workspace iosApp/iosApp.xcworkspace \
+            -scheme iosApp \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -derivedDataPath build/ios \
+            CODE_SIGNING_ALLOWED=NO
+    artifacts:
+      - build/ios/Build/Products/Debug-iphonesimulator/*.app
+    publishing:
+      email:
+        recipients:
+          - victorconforto@outlook.com
+        notify:
+          success: true
+          failure: true
