@@ -29,10 +29,12 @@ workflows:
       xcode: 16.2
       java: 17
     scripts:
+      - name: Set up Gradle Wrapper
+        script: |
+          gradle wrapper --gradle-version 8.9 --distribution-type bin
+          chmod +x gradlew
       - name: Build shared KMP framework
         script: |
-          gradle wrapper --gradle-version 8.9
-          chmod +x gradlew
           ./gradlew :shared:assembleSharedDebugXCFramework
       - name: Copy XCFramework
         script: |
