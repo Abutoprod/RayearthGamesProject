@@ -43,21 +43,22 @@ workflows:
 
       - name: Copy XCFramework into iosApp folder
         script: |
+          # Garantindo que o framework seja copiado exatamente para dentro da pasta iosApp
           XCFW_SRC="shared/build/XCFrameworks/debug/Shared.xcframework"
           XCFW_DST="iosApp/Shared.xcframework"
           rm -rf "$XCFW_DST"
           cp -R "$XCFW_SRC" "$XCFW_DST"
-          echo "=== XCFramework copiado ==="
-          ls -la "$XCFW_DST"
+          echo "=== Verificando local do XCFramework ==="
+          ls -la iosApp/
 
       - name: Build iOS app for Real Device
         script: |
           set -e
           
-          # Criando o arquivo xcconfig temporário para injetar os caminhos do KMP globalmente
-          echo 'FRAMEWORK_SEARCH_PATHS = $(inherited) "$(PROJECT_DIR)" "$(PROJECT_DIR)/.."' > /tmp/config.xcconfig
+          # Forçando o caminho absoluto e relativo no arquivo de configuração do Xcode
+          echo 'FRAMEWORK_SEARCH_PATHS = $(inherited) "$(PROJECT_DIR)" "$(PROJECT_DIR)/Shared.xcframework" "$(SRCROOT)"' > /tmp/config.xcconfig
 
-          # Desativamos a assinatura no compilador para pular a trava do iOS 18 SDK
+          # Executamos o build passando a busca de frameworks TAMBÉM por linha de comando para garantir o Swift
           xcodebuild \
             -project iosApp/iosApp.xcodeproj \
             -scheme iosApp \
@@ -65,6 +66,7 @@ workflows:
             -sdk iphoneos \
             -derivedDataPath build/ios \
             -xcconfig /tmp/config.xcconfig \
+            FRAMEWORK_SEARCH_PATHS="\$(inherited) \$(PROJECT_DIR) \$(PROJECT_DIR)/.." \
             ONLY_ACTIVE_ARCH=NO \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
@@ -76,7 +78,6 @@ workflows:
 
       - name: Package .ipa para AltStore
         script: |
-          # Criamos a estrutura de Payload limpa que a AltStore espera para injetar sua assinatura
           mkdir -p /tmp/Payload
           cp -R build/ios/Build/Products/Debug-iphoneos/RayearthGames.app /tmp/Payload/
           cd /tmp
