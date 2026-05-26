@@ -36,18 +36,10 @@ workflows:
           export PATH=/tmp/gradle/gradle-8.9/bin:$PATH
           gradle --version
 
-      - name: Configure Gradle Memory & Daemons
-        script: |
-          mkdir -p ~/.gradle
-          echo "org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=512m -XX:+UseParallelGC" >> ~/.gradle/gradle.properties
-          echo "org.gradle.workers.max=2" >> ~/.gradle/gradle.properties
-          echo "org.gradle.daemon=false" >> ~/.gradle/gradle.properties
-          echo "kotlin.daemon.jvm.options=-Xmx2g" >> ~/.gradle/gradle.properties
-
       - name: Build shared KMP XCFramework
         script: |
           export PATH=/tmp/gradle/gradle-8.9/bin:$PATH
-          gradle :shared:assembleSharedDebugXCFramework --no-daemon
+          gradle :shared:assembleSharedDebugXCFramework
 
       - name: Copy XCFramework into iosApp folder
         script: |
@@ -55,42 +47,63 @@ workflows:
           XCFW_DST="iosApp/Shared.xcframework"
           rm -rf "$XCFW_DST"
           cp -R "$XCFW_SRC" "$XCFW_DST"
-          echo "=== XCFramework copiado para $XCFW_DST ==="
+          echo "=== XCFramework copiado ==="
           ls -la "$XCFW_DST"
+
+      - name: Patch project.pbxproj — adicionar FRAMEWORK_SEARCH_PATHS
+        script: |
+          PBXPROJ="iosApp/iosApp.xcodeproj/project.pbxproj"
+          echo "=== Conteudo FRAMEWORK_SEARCH_PATHS antes do patch ==="
+          grep -n "FRAMEWORK_SEARCH_PATHS" "$PBXPROJ" || echo "(nenhuma entrada encontrada)"
+
+          # Se já tem FRAMEWORK_SEARCH_PATHS com $(SRCROOT), não faz nada
+          if grep -q 'FRAMEWORK_SEARCH_PATHS.*SRCROOT' "$PBXPROJ"; then
+            echo "FRAMEWORK_SEARCH_PATHS já contém SRCROOT — nenhum patch necessário"
+          else
+            # Adiciona $(SRCROOT) a qualquer linha FRAMEWORK_SEARCH_PATHS existente
+            if grep -q 'FRAMEWORK_SEARCH_PATHS' "$PBXPROJ"; then
+              echo "Adicionando \$(SRCROOT) ao FRAMEWORK_SEARCH_PATHS existente..."
+              sed -i '' 's|FRAMEWORK_SEARCH_PATHS = (|FRAMEWORK_SEARCH_PATHS = (\n\t\t\t\t\t"$(SRCROOT)",|g' "$PBXPROJ" 2>/dev/null || \
+              sed -i 's|FRAMEWORK_SEARCH_PATHS = (|FRAMEWORK_SEARCH_PATHS = (\n\t\t\t\t\t"$(SRCROOT)",|g' "$PBXPROJ"
+            else
+              # Não existe FRAMEWORK_SEARCH_PATHS — insere antes de SWIFT_VERSION em cada bloco de build config
+              echo "Inserindo FRAMEWORK_SEARCH_PATHS novo..."
+              sed -i 's|SWIFT_VERSION = 5\.0;|FRAMEWORK_SEARCH_PATHS = (\n\t\t\t\t\t"$(inherited)",\n\t\t\t\t\t"$(SRCROOT)",\n\t\t\t\t);\n\t\t\t\tSWIFT_VERSION = 5.0;|g' "$PBXPROJ" 2>/dev/null || \
+              sed -i 's|SWIFT_VERSION = 5\.0;|FRAMEWORK_SEARCH_PATHS = (\n\t\t\t\t\t"$(inherited)",\n\t\t\t\t\t"$(SRCROOT)",\n\t\t\t\t);\n\t\t\t\tSWIFT_VERSION = 5.0;|g' "$PBXPROJ"
+            fi
+            echo "=== Conteudo FRAMEWORK_SEARCH_PATHS depois do patch ==="
+            grep -n -A3 "FRAMEWORK_SEARCH_PATHS" "$PBXPROJ"
+          fi
 
       - name: Build iOS app
         script: |
+          set -e
           xcodebuild \
             -project iosApp/iosApp.xcodeproj \
             -scheme iosApp \
             -configuration Debug \
             -sdk iphonesimulator \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.2' \
             -derivedDataPath build/ios \
             ONLY_ACTIVE_ARCH=NO \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            COMPILER_INDEX_STORE_ENABLE=NO \
-            PARALLELIZE_TARGETS=NO
+            COMPILER_INDEX_STORE_ENABLE=NO
 
-          echo "=== Verificando tamanho e presença do .app real ==="
-          ls -la build/ios/Build/Products/Debug-iphonesimulator/
+          echo "=== Build concluído — verificando .app ==="
+          APP_PATH="build/ios/Build/Products/Debug-iphonesimulator/RayearthGames.app"
+          du -sh "$APP_PATH"
+          ls "$APP_PATH"
 
       - name: Package .app para Appetize
         script: |
-          # Entra direto na pasta onde o Xcode gera o binário para não criar caminhos errados no ZIP
-          cd build/ios/Build/Products/Debug-iphonesimulator/
-          
-          if [ ! -d "RayearthGames.app" ]; then
-            echo "ERRO: RayearthGames.app não foi encontrado!"
-            exit 1
-          fi
-
-          # Zipa de forma recursiva pegando tudo o que está dentro do .app de verdade
-          zip -r "$CM_BUILD_DIR/RayearthGames.zip" "RayearthGames.app"
-          
-          echo "=== Verificação do ZIP Corrigido ==="
-          echo "Local: $CM_BUILD_DIR/RayearthGames.zip"
-          echo "Tamanho real do ZIP: $(du -sh $CM_BUILD_DIR/RayearthGames.zip)"
+          APP_PATH="build/ios/Build/Products/Debug-iphonesimulator/RayearthGames.app"
+          mkdir -p /tmp/Payload
+          cp -R "$APP_PATH" /tmp/Payload/
+          cd /tmp
+          zip -r RayearthGames.zip Payload/
+          cp RayearthGames.zip $CM_BUILD_DIR/RayearthGames.zip
+          echo "=== ZIP gerado: $(du -sh $CM_BUILD_DIR/RayearthGames.zip) ==="
 
     artifacts:
       - RayearthGames.zip
