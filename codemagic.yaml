@@ -50,40 +50,44 @@ workflows:
           echo "=== XCFramework copiado para $XCFW_DST ==="
           ls -la "$XCFW_DST"
 
-      - name: Build iOS app
+     - name: Build iOS app
         script: |
           xcodebuild \
             -project iosApp/iosApp.xcodeproj \
             -scheme iosApp \
             -configuration Debug \
             -sdk iphonesimulator \
-            -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.2' \
             -derivedDataPath build/ios \
             ONLY_ACTIVE_ARCH=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            FRAMEWORK_SEARCH_PATHS='$(inherited) $(SRCROOT)'
+            CODE_SIGNING_ALLOWED=NO
 
-          echo "=== Resultado do build ==="
-          APP_PATH="build/ios/Build/Products/Debug-iphonesimulator/RayearthGames.app"
+          echo "=== Procurando o arquivo .app gerado ==="
+          # Busca dinâmica para garantir que o caminho está correto
+          APP_PATH=$(find build/ios -name "*.app" | head -n 1)
+          
+          if [ -z "$APP_PATH" ]; then
+            echo "ERRO: Nenhum arquivo .app foi encontrado em build/ios!"
+            exit 1
+          fi
+          
+          echo "App encontrado em: $APP_PATH"
+          echo "Tamanho do App:"
           du -sh "$APP_PATH"
-          ls "$APP_PATH"
+          
+          # Salva o caminho para o próximo step usar
+          echo "$APP_PATH" > /tmp/app_path.txt
 
       - name: Package .app para Appetize
         script: |
-          APP_PATH="build/ios/Build/Products/Debug-iphonesimulator/RayearthGames.app"
-          mkdir -p /tmp/Payload
-          cp -R "$APP_PATH" /tmp/Payload/
-          cd /tmp
-          zip -r RayearthGames.zip Payload/
-          cp RayearthGames.zip $CM_BUILD_DIR/RayearthGames.zip
-          echo "=== ZIP gerado: $(du -sh $CM_BUILD_DIR/RayearthGames.zip) ==="
-
-    artifacts:
-      - RayearthGames.zip
-    publishing:
-      email:
-        recipients:
-          - victorconforto@outlook.com
-        notify:
-          success: true
-          failure: true
+          APP_PATH=$(cat /tmp/app_path.txt)
+          APP_DIR=$(dirname "$APP_PATH")
+          APP_NAME=$(basename "$APP_PATH")
+          
+          echo "=== Compactando para o Appetize ==="
+          # Entra na pasta do build e zipa diretamente o .app (melhor para o Appetize)
+          cd "$APP_DIR"
+          zip -r "$CM_BUILD_DIR/RayearthGames.zip" "$APP_NAME"
+          
+          echo "=== Verificação do ZIP final ==="
+          echo "Local: $CM_BUILD_DIR/RayearthGames.zip"
+          echo "Tamanho do ZIP: $(du -sh $CM_BUILD_DIR/RayearthGames.zip)"
