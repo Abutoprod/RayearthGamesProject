@@ -72,25 +72,25 @@ workflows:
             COMPILER_INDEX_STORE_ENABLE=NO \
             PARALLELIZE_TARGETS=NO
 
-          echo "=== Verificando conteúdo da pasta de produtos ==="
+          echo "=== Verificando tamanho e presença do .app real ==="
           ls -la build/ios/Build/Products/Debug-iphonesimulator/
 
       - name: Package .app para Appetize
         script: |
-          APP_PATH="build/ios/Build/Products/Debug-iphonesimulator/RayearthGames.app"
+          # Entra direto na pasta onde o Xcode gera o binário para não criar caminhos errados no ZIP
+          cd build/ios/Build/Products/Debug-iphonesimulator/
           
-          if [ ! -d "$APP_PATH" ]; then
-            echo "ERRO: O arquivo .app não existe em $APP_PATH"
+          if [ ! -d "RayearthGames.app" ]; then
+            echo "ERRO: RayearthGames.app não foi encontrado!"
             exit 1
           fi
 
-          echo "=== Compactando para o Appetize ==="
-          cd build/ios/Build/Products/Debug-iphonesimulator/
+          # Zipa de forma recursiva pegando tudo o que está dentro do .app de verdade
           zip -r "$CM_BUILD_DIR/RayearthGames.zip" "RayearthGames.app"
           
-          echo "=== Verificação do ZIP final ==="
+          echo "=== Verificação do ZIP Corrigido ==="
           echo "Local: $CM_BUILD_DIR/RayearthGames.zip"
-          echo "Tamanho do ZIP: $(du -sh $CM_BUILD_DIR/RayearthGames.zip)"
+          echo "Tamanho real do ZIP: $(du -sh $CM_BUILD_DIR/RayearthGames.zip)"
 
     artifacts:
       - RayearthGames.zip
