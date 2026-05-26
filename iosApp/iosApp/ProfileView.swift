@@ -79,7 +79,7 @@ struct ProfileView: View {
                                 if vm.uiState.carregandoGrafico {
                                     ProgressView().tint(Color(hex: "E91E63")).frame(height: 180)
                                 } else {
-                                    GraficoLinhaView(dados: vm.uiState.historicoGrafico)
+                                    GraficoLinhaView(dados: Array(vm.uiState.historicoGrafico))
                                         .frame(height: 180)
                                 }
                             }
@@ -203,7 +203,7 @@ struct ComandaCardView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("PRODUTOS CONSUMIDOS:")
                         .font(.caption).fontWeight(.bold).foregroundColor(.gray)
-                    ForEach(comanda.itens, id: \.produtoId) { item in
+                    ForEach(Array(comanda.itens), id: \.produtoId) { item in
                         HStack {
                             Text("\(item.quantidade)x  \(item.descricaoProduto)")
                                 .font(.footnote).foregroundColor(.white.opacity(0.9))

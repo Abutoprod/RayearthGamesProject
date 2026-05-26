@@ -31,6 +31,9 @@ fun UserProfileScreen(
 ) {
     LaunchedEffect(Unit) { viewModel.inicializarPerfil() }
 
+    // Coleta o estado centralizado — mesma abordagem dos outros ViewModels
+    val uiState by viewModel.uiState.collectAsState()
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -52,7 +55,7 @@ fun UserProfileScreen(
             modifier = Modifier.fillMaxSize().padding(padding),
             color = Color(0xFF110E15)
         ) {
-            if (viewModel.carregandoPerfil) {
+            if (uiState.carregandoPerfil) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = Color(0xFFE91E63))
                 }
@@ -64,8 +67,8 @@ fun UserProfileScreen(
                     // Nome e e-mail
                     item {
                         Column(Modifier.fillMaxWidth()) {
-                            Text(viewModel.nomeUsuario, fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                            Text(viewModel.emailUsuario, color = Color.Gray, fontSize = 14.sp)
+                            Text(uiState.nomeUsuario, fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            Text(uiState.emailUsuario, color = Color.Gray, fontSize = 14.sp)
                         }
                     }
 
@@ -80,7 +83,7 @@ fun UserProfileScreen(
                                 onExpandedChange = { expandidoJogo = !expandidoJogo }
                             ) {
                                 OutlinedTextField(
-                                    value = viewModel.jogoSelecionado?.nome ?: "Selecione o Jogo",
+                                    value = uiState.jogoSelecionado?.nome ?: "Selecione o Jogo",
                                     onValueChange = {},
                                     readOnly = true,
                                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandidoJogo) },
@@ -88,13 +91,12 @@ fun UserProfileScreen(
                                     modifier = Modifier.fillMaxWidth().menuAnchor()
                                 )
                                 ExposedDropdownMenu(expanded = expandidoJogo, onDismissRequest = { expandidoJogo = false }) {
-                                    viewModel.listaJogos.forEach { jogo ->
+                                    uiState.jogos.forEach { jogo ->
                                         DropdownMenuItem(
                                             text = { Text(jogo.nome) },
                                             onClick = {
-                                                viewModel.jogoSelecionado = jogo
+                                                viewModel.selecionarJogo(jogo)
                                                 expandidoJogo = false
-                                                viewModel.atualizarGrafico()
                                             }
                                         )
                                     }
@@ -112,7 +114,7 @@ fun UserProfileScreen(
                                     modifier = Modifier.weight(1f)
                                 ) {
                                     OutlinedTextField(
-                                        value = "Até Mês: ${viewModel.mesReferencia}",
+                                        value = "Até Mês: ${uiState.mesReferencia}",
                                         onValueChange = {},
                                         readOnly = true,
                                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandidoMes) },
@@ -124,9 +126,8 @@ fun UserProfileScreen(
                                             DropdownMenuItem(
                                                 text = { Text("Mês $mes") },
                                                 onClick = {
-                                                    viewModel.mesReferencia = mes
+                                                    viewModel.setMesReferencia(mes)
                                                     expandidoMes = false
-                                                    viewModel.atualizarGrafico()
                                                 }
                                             )
                                         }
@@ -141,7 +142,7 @@ fun UserProfileScreen(
                                     modifier = Modifier.weight(1f)
                                 ) {
                                     OutlinedTextField(
-                                        value = "Ano: ${viewModel.anoReferencia}",
+                                        value = "Ano: ${uiState.anoReferencia}",
                                         onValueChange = {},
                                         readOnly = true,
                                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandidoAno) },
@@ -153,9 +154,8 @@ fun UserProfileScreen(
                                             DropdownMenuItem(
                                                 text = { Text("$ano") },
                                                 onClick = {
-                                                    viewModel.anoReferencia = ano
+                                                    viewModel.setAnoReferencia(ano)
                                                     expandidoAno = false
-                                                    viewModel.atualizarGrafico()
                                                 }
                                             )
                                         }
@@ -175,12 +175,12 @@ fun UserProfileScreen(
                             Column(Modifier.padding(20.dp)) {
                                 Text("Evolução Mensal (Pontos)", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                                 Spacer(Modifier.height(24.dp))
-                                if (viewModel.carregandoGrafico) {
+                                if (uiState.carregandoGrafico) {
                                     Box(Modifier.fillMaxWidth().height(170.dp), contentAlignment = Alignment.Center) {
                                         CircularProgressIndicator(color = Color(0xFFE91E63))
                                     }
                                 } else {
-                                    GraficoLinhaNativo(dados = viewModel.historicoGrafico)
+                                    GraficoLinhaNativo(dados = uiState.historicoGrafico)
                                 }
                             }
                         }
@@ -191,12 +191,12 @@ fun UserProfileScreen(
                         Text("Minhas Comandas Recentes", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
                     }
 
-                    if (viewModel.comandas.isEmpty()) {
+                    if (uiState.comandas.isEmpty()) {
                         item {
                             Text("Nenhuma comanda encontrada.", color = Color.Gray, fontSize = 14.sp, modifier = Modifier.padding(vertical = 8.dp))
                         }
                     } else {
-                        items(viewModel.comandas.filter { it.aberta }) { comanda ->
+                        items(uiState.comandas.filter { it.aberta }) { comanda ->
                             ItemComandaExpansivel(comanda = comanda)
                         }
                     }

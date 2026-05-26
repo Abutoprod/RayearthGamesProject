@@ -29,74 +29,53 @@ workflows:
       xcode: 16.2
       java: 17
     scripts:
-      - name: Install Gradle 8.9
+      - name: Tornar gradlew executável
         script: |
-          curl -L https://services.gradle.org/distributions/gradle-8.9-bin.zip -o /tmp/gradle-8.9-bin.zip
-          unzip -q /tmp/gradle-8.9-bin.zip -d /tmp/gradle
-          export PATH=/tmp/gradle/gradle-8.9/bin:$PATH
-          gradle --version
+          chmod +x gradlew
 
       - name: Build shared KMP XCFramework
+        # ATENÇÃO: o nome correto da task é assemble{BuildType}{FrameworkName}XCFramework
+        # ou seja: assembleDebugSharedXCFramework (Debug antes do nome do framework)
         script: |
-          export PATH=/tmp/gradle/gradle-8.9/bin:$PATH
-          gradle :shared:assembleSharedDebugXCFramework
+          ./gradlew :shared:assembleDebugSharedXCFramework
 
-      - name: Copy XCFramework into iosApp folder
+      - name: Copiar XCFramework para pasta iosApp
+        # O project.pbxproj aponta para iosApp/Shared.xcframework ($(PROJECT_DIR))
         script: |
           XCFW_SRC="shared/build/XCFrameworks/debug/Shared.xcframework"
           XCFW_DST="iosApp/Shared.xcframework"
           rm -rf "$XCFW_DST"
           cp -R "$XCFW_SRC" "$XCFW_DST"
-          echo "=== Estrutura interna do framework copiado ==="
+          echo "=== Estrutura do XCFramework copiado ==="
           ls -R "$XCFW_DST"
 
-      - name: Build iOS app for Real Device
+      - name: Build iOS .app para dispositivo real
         script: |
           set -e
-          
-          # 1. Criação do .xcconfig forçando as rotas de busca gerais e a linkagem do framework
-          cat << 'EOF' > /tmp/config.xcconfig
-          FRAMEWORK_SEARCH_PATHS = $(inherited) "$(PROJECT_DIR)" "$(PROJECT_DIR)/.." "$(SRCROOT)"
-          OTHER_LDFLAGS = $(inherited) -framework Shared
-          EOF
-          
-          # 2. Mapeamento explícito das pastas internas do framework para o compilador do Swift (-I)
-          SWIFT_INCLUDE_PATHS="-I/Users/builder/clone/iosApp -I/Users/builder/clone/iosApp/Shared.xcframework/ios-arm64/Shared.framework/Headers -F/Users/builder/clone/iosApp"
 
-          # 3. Execução do build injetando os parâmetros que contornam o pbxproj vazio
           xcodebuild \
             -project iosApp/iosApp.xcodeproj \
             -scheme iosApp \
             -configuration Debug \
             -sdk iphoneos \
             -derivedDataPath build/ios \
-            -xcconfig /tmp/config.xcconfig \
-            FRAMEWORK_SEARCH_PATHS="\$(inherited) \$(PROJECT_DIR) \$(PROJECT_DIR)/iosApp" \
-            OTHER_SWIFT_FLAGS="$SWIFT_INCLUDE_PATHS" \
             ONLY_ACTIVE_ARCH=NO \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
             COMPILER_INDEX_STORE_ENABLE=NO
 
           echo "=== Build concluído com sucesso ==="
-          
-          # 4. Injeção manual do Shared.framework dentro do pacote .app gerado
-          # Isto garante que o app não dê crash ao abrir (resolve erros do Appetize/BrowserStack)
-          APP_PATH="build/ios/Build/Products/Debug-iphoneos/RayearthGames.app"
-          mkdir -p "$APP_PATH/Frameworks"
-          cp -R iosApp/Shared.xcframework/ios-arm64/Shared.framework "$APP_PATH/Frameworks/"
-          
-          echo "=== Verificando injeção do Framework KMP ==="
-          ls -la "$APP_PATH/Frameworks"
+          ls -la build/ios/Build/Products/Debug-iphoneos/
 
-      - name: Package .ipa para AltStore
+      - name: Empacotar .ipa para AltStore
         script: |
           mkdir -p /tmp/Payload
           cp -R build/ios/Build/Products/Debug-iphoneos/RayearthGames.app /tmp/Payload/
           cd /tmp
           zip -r RayearthGames.ipa Payload/
           cp RayearthGames.ipa $CM_BUILD_DIR/RayearthGames.ipa
-          echo "=== IPA está pronto para download ==="
+          echo "=== IPA pronto para instalação via AltStore ==="
 
     artifacts:
       - RayearthGames.ipa
