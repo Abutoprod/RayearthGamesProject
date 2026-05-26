@@ -57,7 +57,7 @@ workflows:
           # Criando o arquivo xcconfig temporário para injetar os caminhos do KMP globalmente
           echo 'FRAMEWORK_SEARCH_PATHS = $(inherited) "$(PROJECT_DIR)" "$(PROJECT_DIR)/.."' > /tmp/config.xcconfig
 
-          # Build focado em iphoneos (Aparelho Real ARM64) com assinatura Ad-hoc base
+          # Desativamos a assinatura no compilador para pular a trava do iOS 18 SDK
           xcodebuild \
             -project iosApp/iosApp.xcodeproj \
             -scheme iosApp \
@@ -66,10 +66,8 @@ workflows:
             -derivedDataPath build/ios \
             -xcconfig /tmp/config.xcconfig \
             ONLY_ACTIVE_ARCH=NO \
-            CODE_SIGNING_ALLOWED=YES \
-            CODE_SIGNING_REQUIRED=YES \
-            CODE_SIGN_IDENTITY="-" \
-            CODE_SIGNING_INJECT_BASE_ENTITLEMENTS=YES \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
             COMPILER_INDEX_STORE_ENABLE=NO
 
           echo "=== Build concluído — verificando .app de dispositivo ==="
@@ -78,7 +76,7 @@ workflows:
 
       - name: Package .ipa para AltStore
         script: |
-          # A AltStore precisa de um arquivo .ipa estruturado com a pasta Payload interna
+          # Criamos a estrutura de Payload limpa que a AltStore espera para injetar sua assinatura
           mkdir -p /tmp/Payload
           cp -R build/ios/Build/Products/Debug-iphoneos/RayearthGames.app /tmp/Payload/
           cd /tmp
