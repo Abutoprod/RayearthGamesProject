@@ -66,11 +66,11 @@ workflows:
             -configuration Debug \
             -sdk iphonesimulator \
             -derivedDataPath build/ios \
-            -parallelizeTargets NO \
             ONLY_ACTIVE_ARCH=NO \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            COMPILER_INDEX_STORE_ENABLE=NO
+            COMPILER_INDEX_STORE_ENABLE=NO \
+            PARALLELIZE_TARGETS=NO
 
           echo "=== Verificando conteúdo da pasta de produtos ==="
           ls -la build/ios/Build/Products/Debug-iphonesimulator/
