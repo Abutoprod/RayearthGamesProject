@@ -35,14 +35,22 @@ workflows:
           unzip -q /tmp/gradle-8.9-bin.zip -d /tmp/gradle
           export PATH=/tmp/gradle/gradle-8.9/bin:$PATH
           gradle --version
-      - name: Build shared KMP framework
+
+      - name: Build shared KMP XCFramework
         script: |
           export PATH=/tmp/gradle/gradle-8.9/bin:$PATH
           gradle :shared:assembleSharedDebugXCFramework
-      - name: Copy XCFramework
+
+      - name: Copy XCFramework into iosApp folder
         script: |
-          cp -R shared/build/XCFrameworks/debug/Shared.xcframework iosApp/
-      - name: Build iOS
+          XCFW_SRC="shared/build/XCFrameworks/debug/Shared.xcframework"
+          XCFW_DST="iosApp/Shared.xcframework"
+          rm -rf "$XCFW_DST"
+          cp -R "$XCFW_SRC" "$XCFW_DST"
+          echo "=== XCFramework copiado para $XCFW_DST ==="
+          ls -la "$XCFW_DST"
+
+      - name: Build iOS app
         script: |
           xcodebuild \
             -project iosApp/iosApp.xcodeproj \
@@ -53,19 +61,23 @@ workflows:
             -derivedDataPath build/ios \
             ONLY_ACTIVE_ARCH=NO \
             CODE_SIGNING_ALLOWED=NO \
-            FRAMEWORK_SEARCH_PATHS="$(pwd)/iosApp"
+            FRAMEWORK_SEARCH_PATHS='$(inherited) $(SRCROOT)'
 
+          echo "=== Resultado do build ==="
           APP_PATH="build/ios/Build/Products/Debug-iphonesimulator/RayearthGames.app"
-          echo "=== Tamanho do .app ==="
           du -sh "$APP_PATH"
-          echo "=== Conteudo do .app ==="
           ls "$APP_PATH"
 
+      - name: Package .app para Appetize
+        script: |
+          APP_PATH="build/ios/Build/Products/Debug-iphonesimulator/RayearthGames.app"
           mkdir -p /tmp/Payload
           cp -R "$APP_PATH" /tmp/Payload/
           cd /tmp
           zip -r RayearthGames.zip Payload/
           cp RayearthGames.zip $CM_BUILD_DIR/RayearthGames.zip
+          echo "=== ZIP gerado: $(du -sh $CM_BUILD_DIR/RayearthGames.zip) ==="
+
     artifacts:
       - RayearthGames.zip
     publishing:
