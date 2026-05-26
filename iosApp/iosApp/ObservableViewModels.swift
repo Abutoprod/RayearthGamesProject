@@ -1,10 +1,14 @@
 import SwiftUI
 import Shared
 
-// StateFlowWatcher: wrapper Kotlin (StateFlowWatcher.kt) que coleta o StateFlow
-// num CoroutineScope(Dispatchers.Main) e dispara um callback Swift.
-// Substitui "for await state in vm.uiState" — StateFlow do Kotlin/Native 2.x
-// não conforma com AsyncSequence, logo o for-await não funciona.
+// As funções watchXxxUiState() estão em StateFlowWatcher.kt (iosMain) e são expostas
+// em Swift como StateFlowWatcherKt.watchXxx(vm:onState:).
+// Elas retornam FlowCancellable — guarde e chame .cancel() no deinit.
+//
+// Por que não "for await state in vm.uiState"?
+// StateFlow do Kotlin/Native não conforma com AsyncSequence.
+// Por que não StateFlowWatcher (classe)? StateFlow<T> nos parâmetros dos métodos
+// impede o Kotlin/Native de exportar a classe para o header ObjC.
 
 // ── Login ─────────────────────────────────────────────────────────────────────
 
@@ -14,14 +18,14 @@ final class LoginObservableViewModel: ObservableObject {
         isLoading: false, error: nil, isSuccess: false
     )
     private let vm: LoginViewModel = KoinHelper.getLoginViewModel()
-    private let watcher = StateFlowWatcher()
+    private var cancellable: FlowCancellable?
 
     init() {
-        watcher.watchAuthUiState(flow: vm.uiState) { [weak self] state in
+        cancellable = StateFlowWatcherKt.watchLoginUiState(vm: vm) { [weak self] state in
             self?.uiState = state
         }
     }
-    deinit { watcher.cancel() }
+    deinit { cancellable?.cancel() }
 
     func login(email: String, senha: String, onSuccess: @escaping () -> Void) {
         vm.login(email: email, senha: senha, onSuccess: { onSuccess() }, onError: { _ in })
@@ -48,14 +52,14 @@ final class MainMenuObservableViewModel: ObservableObject {
         isLoading: false, avisos: [], rankingResumo: "Carregando...", conquistasCampeao: []
     )
     private let vm: MainMenuViewModel = KoinHelper.getMainMenuViewModel()
-    private let watcher = StateFlowWatcher()
+    private var cancellable: FlowCancellable?
 
     init() {
-        watcher.watchMenuUiState(flow: vm.uiState) { [weak self] state in
+        cancellable = StateFlowWatcherKt.watchMenuUiState(vm: vm) { [weak self] state in
             self?.uiState = state
         }
     }
-    deinit { watcher.cancel() }
+    deinit { cancellable?.cancel() }
 
     func carregarDados(isPrimeiroDia: Bool) {
         vm.carregarDados(isPrimeiroDia: isPrimeiroDia)
@@ -72,14 +76,14 @@ final class EventosObservableViewModel: ObservableObject {
         inscritosPorEvento: [:], error: nil
     )
     private let vm: EventosViewModel = KoinHelper.getEventosViewModel()
-    private let watcher = StateFlowWatcher()
+    private var cancellable: FlowCancellable?
 
     init() {
-        watcher.watchEventosUiState(flow: vm.uiState) { [weak self] state in
+        cancellable = StateFlowWatcherKt.watchEventosUiState(vm: vm) { [weak self] state in
             self?.uiState = state
         }
     }
-    deinit { watcher.cancel() }
+    deinit { cancellable?.cancel() }
 
     func toggleInscricao(eventoId: Int64, meuId: Int64, onErro: @escaping (String) -> Void) {
         vm.toggleInscricao(eventoId: eventoId, meuId: meuId, onErro: { msg in onErro(msg) })
@@ -95,14 +99,14 @@ final class RankingObservableViewModel: ObservableObject {
         filiais: [], filialSelecionada: nil, ranking: [], error: nil
     )
     private let vm: RankingViewModel = KoinHelper.getRankingViewModel()
-    private let watcher = StateFlowWatcher()
+    private var cancellable: FlowCancellable?
 
     init() {
-        watcher.watchRankingUiState(flow: vm.uiState) { [weak self] state in
+        cancellable = StateFlowWatcherKt.watchRankingUiState(vm: vm) { [weak self] state in
             self?.uiState = state
         }
     }
-    deinit { watcher.cancel() }
+    deinit { cancellable?.cancel() }
 
     func selecionarJogo(_ jogo: JogoDTO) { vm.selecionarJogo(jogo: jogo) }
     func selecionarFilial(_ filial: FilialResponse) { vm.selecionarFilial(filial: filial) }
@@ -123,14 +127,14 @@ final class ProfileObservableViewModel: ObservableObject {
         carregandoPerfil: true, carregandoGrafico: false
     )
     private let vm: ProfileViewModel = KoinHelper.getProfileViewModel()
-    private let watcher = StateFlowWatcher()
+    private var cancellable: FlowCancellable?
 
     init() {
-        watcher.watchProfileUiState(flow: vm.uiState) { [weak self] state in
+        cancellable = StateFlowWatcherKt.watchProfileUiState(vm: vm) { [weak self] state in
             self?.uiState = state
         }
     }
-    deinit { watcher.cancel() }
+    deinit { cancellable?.cancel() }
 
     func inicializarPerfil() { vm.inicializarPerfil() }
     func selecionarJogo(_ jogo: JogoDTO) { vm.selecionarJogo(jogo: jogo) }
