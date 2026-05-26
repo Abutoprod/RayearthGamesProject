@@ -29,8 +29,11 @@ workflows:
       xcode: 16.2
       java: 17
     scripts:
-      - name: Tornar gradlew executável
+      - name: Configurar Gradle Wrapper
+        # gradle-wrapper.jar está corrompido no repo — regenerar usando o Gradle do sistema
+        # (mesmo approach do android-workflow que já funciona)
         script: |
+          gradle wrapper --gradle-version 8.9
           chmod +x gradlew
 
       - name: Build shared KMP XCFramework
