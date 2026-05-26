@@ -56,7 +56,8 @@ struct RankingView: View {
             .navigationBarTitleDisplayMode(.large)
         }
         .task {
-            meuId = (try? await authRepository.getStoredUserId()) ?? 0
+            // KotlinLong? (Kotlin Long? via ObjC) → Int64 via .int64Value (NSNumber)
+            meuId = (try? await authRepository.getStoredUserId())?.int64Value ?? 0
         }
         .onChange(of: vm.uiState.jogoSelecionado) { _ in buscarRanking() }
         .onChange(of: vm.uiState.filialSelecionada) { _ in buscarRanking() }
