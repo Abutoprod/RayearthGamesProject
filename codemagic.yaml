@@ -58,15 +58,11 @@ workflows:
             -scheme iosApp \
             -configuration Debug \
             -sdk iphonesimulator \
-            -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.2' \
             -derivedDataPath build/ios \
             ONLY_ACTIVE_ARCH=NO \
-            CODE_SIGNING_ALLOWED=YES \
-            CODE_SIGNING_REQUIRED=YES \
-            CODE_SIGN_IDENTITY="-" \
-            CODE_SIGNING_INJECT_BASE_ENTITLEMENTS=YES \
-            COMPILER_INDEX_STORE_ENABLE=NO \
-            FRAMEWORK_SEARCH_PATHS="\$(inherited) \$(SRCROOT) \$(SRCROOT)/."
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            COMPILER_INDEX_STORE_ENABLE=NO
 
           echo "=== Build concluído — verificando .app ==="
           APP_PATH="build/ios/Build/Products/Debug-iphonesimulator/RayearthGames.app"
@@ -76,12 +72,10 @@ workflows:
       - name: Package .app para Appetize
         script: |
           APP_PATH="build/ios/Build/Products/Debug-iphonesimulator/RayearthGames.app"
-          mkdir -p /tmp/Payload
-          cp -R "$APP_PATH" /tmp/Payload/
-          cd /tmp
-          zip -r RayearthGames.zip Payload/
+          cd build/ios/Build/Products/Debug-iphonesimulator
+          zip -r RayearthGames.zip RayearthGames.app
           cp RayearthGames.zip $CM_BUILD_DIR/RayearthGames.zip
-          echo "=== ZIP gerado: $(du -sh $CM_BUILD_DIR/RayearthGames.zip) ==="
+          echo "=== ZIP gerado com sucesso ==="
 
     artifacts:
       - RayearthGames.zip
