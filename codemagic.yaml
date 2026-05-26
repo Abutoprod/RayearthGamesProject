@@ -59,7 +59,9 @@ workflows:
             -sdk iphonesimulator \
             -derivedDataPath build/ios \
             ONLY_ACTIVE_ARCH=NO \
-            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            COMPILER_INDEX_STORE_ENABLE=NO
 
           echo "=== Procurando o arquivo .app gerado ==="
           APP_PATH=$(find build/ios -name "*.app" | head -n 1)
@@ -73,27 +75,3 @@ workflows:
           echo "Tamanho do App:"
           du -sh "$APP_PATH"
           echo "$APP_PATH" > /tmp/app_path.txt
-
-      - name: Package .app para Appetize
-        script: |
-          APP_PATH=$(cat /tmp/app_path.txt)
-          APP_DIR=$(dirname "$APP_PATH")
-          APP_NAME=$(basename "$APP_PATH")
-          
-          echo "=== Compactando para o Appetize ==="
-          cd "$APP_DIR"
-          zip -r "$CM_BUILD_DIR/RayearthGames.zip" "$APP_NAME"
-          
-          echo "=== Verificação do ZIP final ==="
-          echo "Local: $CM_BUILD_DIR/RayearthGames.zip"
-          echo "Tamanho do ZIP: $(du -sh $CM_BUILD_DIR/RayearthGames.zip)"
-
-    artifacts:
-      - RayearthGames.zip
-    publishing:
-      email:
-        recipients:
-          - victorconforto@outlook.com
-        notify:
-          success: true
-          failure: true
