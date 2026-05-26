@@ -50,7 +50,7 @@ workflows:
           echo "=== XCFramework copiado para $XCFW_DST ==="
           ls -la "$XCFW_DST"
 
-     - name: Build iOS app
+      - name: Build iOS app
         script: |
           xcodebuild \
             -project iosApp/iosApp.xcodeproj \
@@ -62,7 +62,6 @@ workflows:
             CODE_SIGNING_ALLOWED=NO
 
           echo "=== Procurando o arquivo .app gerado ==="
-          # Busca dinâmica para garantir que o caminho está correto
           APP_PATH=$(find build/ios -name "*.app" | head -n 1)
           
           if [ -z "$APP_PATH" ]; then
@@ -73,8 +72,6 @@ workflows:
           echo "App encontrado em: $APP_PATH"
           echo "Tamanho do App:"
           du -sh "$APP_PATH"
-          
-          # Salva o caminho para o próximo step usar
           echo "$APP_PATH" > /tmp/app_path.txt
 
       - name: Package .app para Appetize
@@ -84,10 +81,19 @@ workflows:
           APP_NAME=$(basename "$APP_PATH")
           
           echo "=== Compactando para o Appetize ==="
-          # Entra na pasta do build e zipa diretamente o .app (melhor para o Appetize)
           cd "$APP_DIR"
           zip -r "$CM_BUILD_DIR/RayearthGames.zip" "$APP_NAME"
           
           echo "=== Verificação do ZIP final ==="
           echo "Local: $CM_BUILD_DIR/RayearthGames.zip"
           echo "Tamanho do ZIP: $(du -sh $CM_BUILD_DIR/RayearthGames.zip)"
+
+    artifacts:
+      - RayearthGames.zip
+    publishing:
+      email:
+        recipients:
+          - victorconforto@outlook.com
+        notify:
+          success: true
+          failure: true
