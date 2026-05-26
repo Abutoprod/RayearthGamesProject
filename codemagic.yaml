@@ -63,15 +63,23 @@ workflows:
             CODE_SIGNING_REQUIRED=NO \
             COMPILER_INDEX_STORE_ENABLE=NO
 
-          echo "=== Procurando o arquivo .app gerado ==="
-          APP_PATH=$(find build/ios -name "*.app" | head -n 1)
+          echo "=== Verificando conteúdo da pasta de produtos ==="
+          # Listando o diretório exato para garantir que o .app está lá
+          ls -la build/ios/Build/Products/Debug-iphonesimulator/
+
+      - name: Package .app para Appetize
+        script: |
+          APP_PATH="build/ios/Build/Products/Debug-iphonesimulator/RayearthGames.app"
           
-          if [ -z "$APP_PATH" ]; then
-            echo "ERRO: Nenhum arquivo .app foi encontrado em build/ios!"
+          if [ ! -d "$APP_PATH" ]; then
+            echo "ERRO: O arquivo .app não existe em $APP_PATH"
             exit 1
           fi
+
+          echo "=== Compactando para o Appetize ==="
+          cd build/ios/Build/Products/Debug-iphonesimulator/
+          zip -r "$CM_BUILD_DIR/RayearthGames.zip" "RayearthGames.app"
           
-          echo "App encontrado em: $APP_PATH"
-          echo "Tamanho do App:"
-          du -sh "$APP_PATH"
-          echo "$APP_PATH" > /tmp/app_path.txt
+          echo "=== Verificação do ZIP final ==="
+          echo "Local: $CM_BUILD_DIR/RayearthGames.zip"
+          echo "Tamanho do ZIP: $(du -sh $CM_BUILD_DIR/RayearthGames.zip)"
