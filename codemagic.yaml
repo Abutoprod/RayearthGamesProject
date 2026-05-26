@@ -43,22 +43,27 @@ workflows:
 
       - name: Copy XCFramework into iosApp folder
         script: |
-          # Garantindo que o framework seja copiado exatamente para dentro da pasta iosApp
           XCFW_SRC="shared/build/XCFrameworks/debug/Shared.xcframework"
           XCFW_DST="iosApp/Shared.xcframework"
           rm -rf "$XCFW_DST"
           cp -R "$XCFW_SRC" "$XCFW_DST"
-          echo "=== Verificando local do XCFramework ==="
-          ls -la iosApp/
+          echo "=== Estrutura interna do framework copiado ==="
+          ls -R "$XCFW_DST"
 
       - name: Build iOS app for Real Device
         script: |
           set -e
           
-          # Forçando o caminho absoluto e relativo no arquivo de configuração do Xcode
-          echo 'FRAMEWORK_SEARCH_PATHS = $(inherited) "$(PROJECT_DIR)" "$(PROJECT_DIR)/Shared.xcframework" "$(SRCROOT)"' > /tmp/config.xcconfig
+          # 1. Criação do .xcconfig forçando as rotas de busca gerais e a linkagem do framework
+          cat << 'EOF' > /tmp/config.xcconfig
+          FRAMEWORK_SEARCH_PATHS = $(inherited) "$(PROJECT_DIR)" "$(PROJECT_DIR)/.." "$(SRCROOT)"
+          OTHER_LDFLAGS = $(inherited) -framework Shared
+          EOF
+          
+          # 2. Mapeamento explícito das pastas internas do framework para o compilador do Swift (-I)
+          SWIFT_INCLUDE_PATHS="-I/Users/builder/clone/iosApp -I/Users/builder/clone/iosApp/Shared.xcframework/ios-arm64/Shared.framework/Headers -F/Users/builder/clone/iosApp"
 
-          # Executamos o build passando a busca de frameworks TAMBÉM por linha de comando para garantir o Swift
+          # 3. Execução do build injetando os parâmetros que contornam o pbxproj vazio
           xcodebuild \
             -project iosApp/iosApp.xcodeproj \
             -scheme iosApp \
@@ -66,15 +71,23 @@ workflows:
             -sdk iphoneos \
             -derivedDataPath build/ios \
             -xcconfig /tmp/config.xcconfig \
-            FRAMEWORK_SEARCH_PATHS="\$(inherited) \$(PROJECT_DIR) \$(PROJECT_DIR)/.." \
+            FRAMEWORK_SEARCH_PATHS="\$(inherited) \$(PROJECT_DIR) \$(PROJECT_DIR)/iosApp" \
+            OTHER_SWIFT_FLAGS="$SWIFT_INCLUDE_PATHS" \
             ONLY_ACTIVE_ARCH=NO \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             COMPILER_INDEX_STORE_ENABLE=NO
 
-          echo "=== Build concluído — verificando .app de dispositivo ==="
+          echo "=== Build concluído com sucesso ==="
+          
+          # 4. Injeção manual do Shared.framework dentro do pacote .app gerado
+          # Isto garante que o app não dê crash ao abrir (resolve erros do Appetize/BrowserStack)
           APP_PATH="build/ios/Build/Products/Debug-iphoneos/RayearthGames.app"
-          du -sh "$APP_PATH"
+          mkdir -p "$APP_PATH/Frameworks"
+          cp -R iosApp/Shared.xcframework/ios-arm64/Shared.framework "$APP_PATH/Frameworks/"
+          
+          echo "=== Verificando injeção do Framework KMP ==="
+          ls -la "$APP_PATH/Frameworks"
 
       - name: Package .ipa para AltStore
         script: |
