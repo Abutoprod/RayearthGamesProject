@@ -5,13 +5,14 @@ workflows:
     environment:
       java: 17
     scripts:
-      - name: Set up Gradle
-        script: |
-          gradle wrapper --gradle-version 8.9
-          chmod +x gradlew
       - name: Build Android APK
+        # gradle-wrapper.jar corrompido no repo — baixar Gradle 8.9 e chamar direto
         script: |
-          ./gradlew androidApp:assembleDebug
+          set -e
+          curl -L https://services.gradle.org/distributions/gradle-8.9-bin.zip \
+               -o /tmp/gradle-8.9-bin.zip
+          unzip -q /tmp/gradle-8.9-bin.zip -d /tmp/gradle-dist
+          /tmp/gradle-dist/gradle-8.9/bin/gradle androidApp:assembleDebug
     artifacts:
       - androidApp/build/outputs/apk/debug/*.apk
     publishing:
@@ -29,18 +30,15 @@ workflows:
       xcode: 16.2
       java: 17
     scripts:
-      - name: Configurar Gradle Wrapper
-        # gradle-wrapper.jar está corrompido no repo — regenerar usando o Gradle do sistema
-        # (mesmo approach do android-workflow que já funciona)
-        script: |
-          gradle wrapper --gradle-version 8.9
-          chmod +x gradlew
-
       - name: Build shared KMP XCFramework
-        # ATENÇÃO: o nome correto da task é assemble{BuildType}{FrameworkName}XCFramework
-        # ou seja: assembleDebugSharedXCFramework (Debug antes do nome do framework)
+        # gradle-wrapper.jar está corrompido no repo.
+        # Baixamos o Gradle 8.9 e chamamos o binário diretamente (sem ./gradlew).
         script: |
-          ./gradlew :shared:assembleDebugSharedXCFramework
+          set -e
+          curl -L https://services.gradle.org/distributions/gradle-8.9-bin.zip \
+               -o /tmp/gradle-8.9-bin.zip
+          unzip -q /tmp/gradle-8.9-bin.zip -d /tmp/gradle-dist
+          /tmp/gradle-dist/gradle-8.9/bin/gradle :shared:assembleSharedDebugXCFramework
 
       - name: Copiar XCFramework para pasta iosApp
         # O project.pbxproj aponta para iosApp/Shared.xcframework ($(PROJECT_DIR))
