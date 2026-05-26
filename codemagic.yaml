@@ -36,37 +36,8 @@ workflows:
           export PATH=/tmp/gradle/gradle-8.9/bin:$PATH
           gradle --version
 
-      - name: Build shared KMP XCFramework
-        script: |
-          export PATH=/tmp/gradle/gradle-8.9/bin:$PATH
-          gradle :shared:assembleSharedDebugXCFramework
-
-      - name: Copy XCFramework into iosApp folder
-        script: |
-          XCFW_SRC="shared/build/XCFrameworks/debug/Shared.xcframework"
-          XCFW_DST="iosApp/Shared.xcframework"
-          rm -rf "$XCFW_DST"
-          cp -R "$XCFW_SRC" "$XCFW_DST"
-          echo "=== XCFramework copiado para $XCFW_DST ==="
-          ls -la "$XCFW_DST"
-
-     ios-workflow:
-    name: iOS Build
-    max_build_duration: 60
-    environment:
-      xcode: 16.2
-      java: 17
-    scripts:
-      - name: Install Gradle 8.9
-        script: |
-          curl -L https://services.gradle.org/distributions/gradle-8.9-bin.zip -o /tmp/gradle-8.9-bin.zip
-          unzip -q /tmp/gradle-8.9-bin.zip -d /tmp/gradle
-          export PATH=/tmp/gradle/gradle-8.9/bin:$PATH
-          gradle --version
-
       - name: Configure Gradle Memory & Daemons
         script: |
-          # Cria um gradle.properties global para limitar o consumo de RAM e não estourar o Mac Mini
           mkdir -p ~/.gradle
           echo "org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=512m -XX:+UseParallelGC" >> ~/.gradle/gradle.properties
           echo "org.gradle.workers.max=2" >> ~/.gradle/gradle.properties
@@ -89,7 +60,6 @@ workflows:
 
       - name: Build iOS app
         script: |
-          # Desabilita o build paralelo no Xcode para economizar recursos de hardware
           xcodebuild \
             -project iosApp/iosApp.xcodeproj \
             -scheme iosApp \
