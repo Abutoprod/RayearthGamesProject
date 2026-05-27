@@ -1,0 +1,101 @@
+services:
+
+  # ─── Banco de Dados PostgreSQL ──────────────────────────────────────────────
+  db:
+    image: postgres:15
+    container_name: rayearth_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: estoque_db
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: tr4ptr1x
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - rayearth_net
+
+  # ─── RabbitMQ ────────────────────────────────────────────────────────────────
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: rayearth_rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: rayearth
+      RABBITMQ_DEFAULT_PASS: rabbit_secret_2026
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - rayearth_net
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # ─── Backend Spring Boot ─────────────────────────────────────────────────────
+  backend:
+    build: ./backend
+    container_name: rayearth_app
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/estoque_db
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: tr4ptr1x
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: rayearth
+      SPRING_RABBITMQ_PASSWORD: rabbit_secret_2026
+      API_SECURITY_TOKEN_SECRET: ${API_SECURITY_TOKEN_SECRET:-projeto-open-inventory-2026}
+      SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME:-abutodzn@gmail.com}
+      SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD:-slmfdlrgqzqtigfa}
+      APP_BASE_URL: ${APP_BASE_URL:-https://api.rayearthgames.top}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://rayearthgames.top}
+    volumes:
+      - ./backend/fotos-eventos:/app/fotos-eventos
+      - ./backend/fotos-avisos:/app/fotos-avisos
+    depends_on:
+      db:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - rayearth_net
+
+  # ─── Webapp Next.js ──────────────────────────────────────────────────────────
+  webapp:
+    build:
+      context: ./webapp
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.rayearthgames.top}
+    container_name: rayearth_webapp
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - rayearth_net
+
+  # ─── Cloudflare Tunnel ───────────────────────────────────────────────────────
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: rayearth_tunnel
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      - backend
+      - webapp
+    networks:
+      - rayearth_net
+
+volumes:
+  postgres_data:
+  rabbitmq_data:
+
+networks:
+  rayearth_net:
+    driver: bridge

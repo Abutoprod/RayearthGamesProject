@@ -1,9 +1,47 @@
-.gradle
-.idea
-build
+# ─── Segredos / Variáveis de ambiente ────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ─── Next.js ─────────────────────────────────────────────────────────────────
+webapp/.next/
+webapp/out/
+webapp/node_modules/
+webapp/.npm
+webapp/.eslintcache
+
+# ─── Java / Maven ────────────────────────────────────────────────────────────
+backend/target/
+backend/*.class
+backend/*.jar
+backend/*.war
+!backend/mvnw
+!backend/mvnw.cmd
+
+# ─── Docker ──────────────────────────────────────────────────────────────────
+# (docker-compose.yml vai pro repo normalmente)
+
+# ─── Backups locais ──────────────────────────────────────────────────────────
+backend/backups/
+backend/backup.sh
+backend/backup_db.bat
+
+# ─── Uploads / Fotos geradas em runtime ──────────────────────────────────────
+backend/fotos-eventos/
+backend/fotos-avisos/
+
+# ─── IDEs ────────────────────────────────────────────────────────────────────
+.idea/
 *.iml
-local.properties
+.vscode/
+*.suo
+*.sw?
+
+# ─── OS ──────────────────────────────────────────────────────────────────────
 .DS_Store
-*.class
-*.apk
-*.aab
+Thumbs.db
+desktop.ini
+
+# ─── Logs ────────────────────────────────────────────────────────────────────
+*.log
+logs/
